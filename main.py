@@ -7,11 +7,14 @@ from tank import actuTank
 
 
 from drone import actuDrone
+from ultralytics import YOLO
+
+model = YOLO("best.pt")
 
 class MyApp(ShowBase):
 
     def __init__(self):
-
+# --- Drone camera setup ---
         ShowBase.__init__(self)
         # Load the environment model.
         self.scene = self.loader.loadModel("models/environment")
@@ -71,6 +74,16 @@ class MyApp(ShowBase):
         self.drone.setPos(0,0,10)
         self.drone.setHpr(0,90,0)
         
+        self.drone_cam = self.makeCamera(self.win, camName="drone_cam")
+        self.drone_cam.reparentTo(self.drone)
+        self.drone_cam.setPos(0, 0, 0.5)
+        self.drone_cam.setHpr(0, 0, 0)
+        self.last_capture_time = 0
+        self.capture_interval = 0.5  # seconds
+        self.taskMgr.add(self.capture_task, "CaptureDroneCameraTask")
+
+
+        
     def spinCameraTask(self, task):
         self.actu(task.time)
         campos, camOr=actuCam(self.keyMap)
@@ -83,6 +96,27 @@ class MyApp(ShowBase):
         actuTank(s, time)
         actuDrone(s,time)
         pass
+    # load once
+
+    def capture_task(self, task):
+        if task.time - self.last_capture_time >= self.capture_interval:
+            self.last_capture_time = task.time
+
+            tex = Texture()
+            base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
+            self.drone_cam.node().getDisplayRegion(0).capture_tex(tex)
+
+            filename = f"drone_capture_{int(task.time * 10)}.png"
+            tex.write(filename)
+
+            print("Captured:", filename)
+
+            # --- RUN YOLO ON THE FRAME ---
+            results = model(filename)
+            print(results)
+
+        return Task.cont
+
 
 app = MyApp()
 
