@@ -8,8 +8,6 @@ from tank import actuTank
 
 from drone import actuDrone
 
-# changer les baseDir ligne ~30 dans cette file
-
 class MyApp(ShowBase):
 
     def __init__(self):
