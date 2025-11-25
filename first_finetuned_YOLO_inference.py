@@ -10,7 +10,7 @@ model = YOLO("runs_finetune_1/yolov8n_finetune2/weights/best.pt")
 # ---------------------------------------------------
 # Path to the image you want to test
 # ---------------------------------------------------
-image_path = "images-2.jpeg"
+image_path = "WhatsApp_Image_2025-11-25_at_20.51.47.jpeg"
 
 # ---------------------------------------------------
 # Run inference
