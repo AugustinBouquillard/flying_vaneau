@@ -18,13 +18,11 @@ import subprocess
 import shutil
 
 !pip install roboflow
-
 from roboflow import Roboflow
-
 rf = Roboflow(api_key="01ul0nibjpXa8YbgircG")
-project = rf.workspace("flying-vaneau").project("pure-tank-i90w2")
-version = project.version(1)
-dataset = version.download("yolov8")
+project = rf.workspace("huyen-dinh").project("military-vehicle-rstvv")
+version = project.version(2)
+dataset = version.download("coco")
 
 try:
     from ultralytics import YOLO
