@@ -150,13 +150,13 @@ class Drone:
         return {
             "a": a,
             "cam_pointer": self.set_pointer(),
-            "heading": omega * self.dt
+            "heading": np.array([omega * self.dt, 0, 0])
         }
 
     def move_above_target(self):
         """Se positionne au-dessus de la cible détectée"""
         if self.target_world_pos is None:
-            return {"a": np.zeros(3), "cam_pointer": self.pointer, "heading": 0}
+            return {"a": np.zeros(3), "cam_pointer": self.pointer, "heading": np.zeros(3)}
 
         # Vecteur vers la cible (projection horizontale)
         delta = self.target_world_pos[:2] - self.p[:2]
@@ -197,7 +197,7 @@ class Drone:
         return {
             "a": a,
             "cam_pointer": self.set_pointer(),
-            "heading": d_heading
+            "heading": np.array([d_heading, 0, 0])
         }
 
     def update_physics(self, a, d_heading):
@@ -208,10 +208,13 @@ class Drone:
         self.heading = (self.heading + pi) % (2 * pi) - pi  # Normalisation
         self.t += self.dt
 
-    def main(self, img: np.ndarray | None = None):
+    def main(self, pos, v, ori, img: np.ndarray | None = None):
         """Boucle principale de contrôle du drone"""
+        self.v = np.array(v)
+        self.p = np.array(pos)
+        self.heading = ori[0]
 
-        command = {"a": np.zeros(3), "cam_pointer": self.pointer, "heading": 0}
+        command = {"a": np.zeros(3), "cam_pointer": self.pointer, "heading": np.zeros(3)}
 
         # === MODE WAIT : Patrouille et recherche ===
         if self.mode == "WAIT":
@@ -256,14 +259,14 @@ class Drone:
                 # Maintient la distance actuelle
                 command = {"a": -FRICTION * self.v,
                            "cam_pointer": self.set_pointer(),
-                           "heading": 0}
+                           "heading": np.zeros(3)}
 
         # Mise à jour physique
-        self.update_physics(command["a"], command["heading"])
+        self.update_physics(command["a"], command["heading"][0])
 
         return command
 
-
+"""
 # === EXEMPLE D'UTILISATION ===
 if __name__ == "__main__":
     drone = Drone(position=[0, 0, 30])  # Altitude 30m
@@ -285,3 +288,4 @@ if __name__ == "__main__":
             print(f"  Vitesse: {np.linalg.norm(drone.v):.2f} m/s")
             print(f"  Heading: {drone.heading * 180 / pi:.1f}°")
             print(f"  Camera: pitch={drone.camera_pitch * 180 / pi:.1f}°, yaw={drone.camera_yaw * 180 / pi:.1f}°")
+"""
