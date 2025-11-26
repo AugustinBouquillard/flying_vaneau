@@ -108,7 +108,7 @@ class MyApp(ShowBase):
             #base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
             tex = self.drone_cam.node().getDisplayRegion(0).getScreenshot()
 
-            filename = f"drone_capture_{int(task.time * 10)}.png"
+            #filename = f"drone_capture_{int(task.time * 10)}.png"
             #tex.write(filename)
             sx = tex.getXSize()
             sy = tex.getYSize()
@@ -118,7 +118,7 @@ class MyApp(ShowBase):
             
             print(im)
 
-            print("Captured:", filename)
+            #print("Captured:", filename)
 
             # --- RUN YOLO ON THE FRAME ---
             #results = model(im)
