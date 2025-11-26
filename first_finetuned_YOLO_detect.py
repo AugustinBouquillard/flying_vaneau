@@ -36,15 +36,15 @@ def detect_objects(model, img: PIL.Image, DEBUG=False):
         })
         if DEBUG:
             # Draw center point
-            Circle = cv2.circle(open_cv_image, (int(X), int(Y)), 5, (0, 255, 0), -1)
-
+            #Circle = cv2.circle(open_cv_image, (int(X), int(Y)), 5, (255, 255, 0), -1)
+            cv2.drawMarker(open_cv_image, (int(X), int(Y)),(255,0,0),cv2.MARKER_TRIANGLE_DOWN,5,2,1)
             # Label center coordinates (needs int()!)
             text = f"({int(X)}, {int(Y)} : {conf:.2f})"
             cv2.putText(
                 open_cv_image, text,
                 (int(X) - 20, int(Y) - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.5, (0, 255, 0), 1, cv2.LINE_AA
+                0.5, (255, 0, 0), 1, cv2.LINE_AA
             )
 
     # Convert BGR (OpenCV) → RGB (Matplotlib)

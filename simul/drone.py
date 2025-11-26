@@ -15,7 +15,7 @@ def actuDrone(s, time):
         #v=v_add(v, v_mul(g, dt))
         pos=v_add(pos, v_mul(v, dt))
         ori=v_add(ori, v_mul(vrot, dt))
-        s.drone.setPos(pos[0],pos[1],pos[2])
+        s.drone.setPos(pos[0],pos[1],pos[2]+20)
         s.drone.setHpr(*ori) # orientation en angles euler, le preier est haeding
         
         

@@ -4,12 +4,13 @@ from direct.task import Task
 from panda3d.core import *
 from tank import actuTank
 from drone import actuDrone
+from ultralytics import YOLO
 from PIL import Image
 from first_finetuned_YOLO_detect import detect_objects
 import math
 
 model = YOLO("./best.pt")
-
+view = False
 
 class MyApp(ShowBase):
 
@@ -68,7 +69,7 @@ class MyApp(ShowBase):
         self.i = 0
 
         # Setup drone
-        drone_path = Filename.fromOsSpecific(baseDir + "/droneModel.dae")
+        drone_path = Filename.fromOsSpecific("./droneModel.dae")
         self.drone = self.loader.loadModel(drone_path)
         self.drone.setScale(10000, 10000, 10000)
         self.drone.reparentTo(self.render)
@@ -85,7 +86,7 @@ class MyApp(ShowBase):
         self.create_camera_frustum()
 
         self.last_capture_time = 0
-        self.capture_interval = 0.5
+        self.capture_interval = 0.4
         self.taskMgr.add(self.capture_task, "CaptureDroneCameraTask")
 
     def create_camera_frustum(self):
@@ -138,9 +139,9 @@ class MyApp(ShowBase):
 
     def spinCameraTask(self, task):
         #caméra controlée par flèches
-
+        if task.time<10: return Task.cont
         self.actu(task.time)
-        view = False
+        #view = True
         if view:
             campos, camOr = actuCam(self.keyMap)
             self.camera.setPos(*campos)
@@ -165,7 +166,7 @@ class MyApp(ShowBase):
         actuDrone(self, time)
 
     def capture_task(self, task):
-        if task.time - self.last_capture_time >= self.capture_interval:
+        if task.time - self.last_capture_time >= self.capture_interval and not view:
             self.last_capture_time = task.time
 
             # tex = Texture()
@@ -182,7 +183,7 @@ class MyApp(ShowBase):
 
             print(im)
 
-            print("Captured:", filename)
+            #print("Captured:", filename)
 
             # --- RUN YOLO ON THE FRAME ---
             # results = model(im)
@@ -361,9 +362,27 @@ class MyApp(ShowBase):
     #    if task.time - self.last_capture_time >= self.capture_interval:
    #         self.last_capture_time = task.time
 
+<<<<<<< HEAD
   #          tex = Texture()
  #           self.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam) #il y avait base.win
 #            self.drone_cam.node().getDisplayRegion(0).capture_tex(tex)
+=======
+            #tex = Texture()
+            #base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
+            tex = self.drone_cam.node().getDisplayRegion(0).getScreenshot()
+
+            #filename = f"drone_capture_{int(task.time * 10)}.png"
+            #tex.write(filename)
+            sx = tex.getXSize()
+            sy = tex.getYSize()
+            data = tex.getRamImage().getData()
+            #Convert Image to Pygame Image
+            im = Image.frombytes("RGBA", (sx, sy), data,"raw","RGBA",0,-1)
+            
+            print(im)
+
+            #print("Captured:", filename)
+>>>>>>> main
 
             #filename = f"drone_capture_{int(task.time * 10)}.png"
            # tex.write(filename)
