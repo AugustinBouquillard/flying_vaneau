@@ -1,6 +1,8 @@
 from math import pi, cos, sin, tan, atan2, sqrt
 import numpy as np
 
+from tank import direction
+
 # Configuration caméra
 FOV_WIDTH = 46 * pi / 180  # Conversion degrés -> radians
 FOV_HEIGHT = 32 * pi / 180
@@ -10,14 +12,13 @@ IMG_HEIGHT = 3000
 CX, CY = IMG_WIDTH / 2, IMG_HEIGHT / 2
 
 # Paramètres physiques
-A_MAX = 1.0  # m/s²
-FRICTION = 0.1  # coefficient de frottement
+A_MAX = 4.0  # m/s²
+FRICTION = 0.2  # coefficient de frottement
 
 # Limites de la caméra
 PITCH_MIN = -pi / 4
 PITCH_MAX = pi / 2
 YAW_RANGE = pi / 2  # ±90°
-
 
 class Drone:
     """Drone de surveillance avec caméra stabilisée et IA de détection"""
@@ -42,7 +43,7 @@ class Drone:
 
         # Données de cible
         self.coord = None  # Coordonnées image de la cible
-        self.target_world_pos = None  # Position 3D estimée de la cible
+        self.target_world_pos = (0, 0, 0)  # Position 3D estimée de la cible
 
         # Angles vers la cible
         self.theta_target = None  # Offset pitch
@@ -54,6 +55,7 @@ class Drone:
         self.mode = "WAIT"  # WAIT, SURVEY, ATTACK
         self.order = "ABOVE"  # ABOVE, ATTACK, FORGET, KEEP
         self.target_lost_timer = 0
+        self.origin = (0, 0)
 
         # Image courante
         self.img = None
@@ -129,28 +131,27 @@ class Drone:
 
         return target_pos
 
-    def move_circle(self, radius=50, height=30):
+    def move_circle(self, radius=50):
         """Pattern circulaire de surveillance"""
-        omega = 0.2  # Vitesse angulaire
+        omega = A_MAX / (FRICTION * radius)  # Vitesse angulaire
 
         # Position cible sur le cercle
-        target_pos = np.array([
-            radius * cos(self.t * omega),
-            radius * sin(self.t * omega),
-            height
+        direction = np.array([
+            cos(self.t * omega),
+            sin(self.t * omega),
+            0
         ])
+        a = A_MAX * direction - FRICTION * self.v
 
-        # Contrôle proportionnel vers la position cible
-        error = target_pos - self.p
-        a = A_MAX * np.clip(error / 10, -1, 1) - FRICTION * self.v
+        # Permuter v1 et v2 pour obtenir un drone qui regarde toujours au centre, mais là il tourne son front en sens anti parcours.
+        h = -10 * np.linalg.det([[self.v[1], self.v[0]], [cos(pi * self.heading/180), sin(pi * self.heading/180)]])
 
-        # Rotation progressive de la caméra vers le centre
-        self.camera_pitch += (pi / 6 - self.camera_pitch) * 0.01
+        self.camera_pitch = cos(self.t/2) * 20 - 45
 
         return {
             "a": a,
-            "cam_pointer": self.set_pointer(),
-            "heading": np.array([omega * self.dt, 0, 0])
+            "cam_pointer": np.array([0, self.camera_pitch, 0]), #self.set_pointer(),
+            "heading": np.array([h, 0, 0])
         }
 
     def move_above_target(self):
@@ -162,8 +163,8 @@ class Drone:
         delta = self.target_world_pos[:2] - self.p[:2]
         r = np.linalg.norm(delta)
 
-        if r < 0.1:  # Déjà au-dessus
-            a = -2 * FRICTION * self.v
+        if r < 2:  # Déjà au-dessus
+            a = - 2 * FRICTION * self.v
         else:
             # Direction vers la cible
             direction = delta / r if r > 0 else np.zeros(2)
@@ -177,47 +178,33 @@ class Drone:
             ]) - FRICTION * self.v
 
         # Ajustement de la caméra pour suivre la cible
-        if r > 0.1:
+        if r > 1:
             # Vitesse de convergence du pitch
-            pitch_target = atan2(-self.p[2], r)
-            self.camera_pitch += (pitch_target - self.camera_pitch) * 0.05
+            self.camera_pitch = 180 * atan2(-self.p[2], r) / pi
 
-            # Alignement progressif du yaw et heading
-            angle_to_target = atan2(delta[1], delta[0])
-            heading_error = (angle_to_target - self.heading + pi) % (2 * pi) - pi
+            heading_error = - np.linalg.det([[delta[0], delta[1]], [cos(pi * self.heading / 180), - sin(pi * self.heading / 180)]])/r
 
-            d_heading = heading_error * 0.02  # Converge en ~2s
-            self.camera_yaw -= self.camera_yaw * 0.03  # Recentre le yaw
-
-            if self.phi_total is not None:
-                self.phi_total -= d_heading
+            v_heading = 200 * heading_error
         else:
-            d_heading = 0
+            v_heading = 0
 
         return {
             "a": a,
-            "cam_pointer": self.set_pointer(),
-            "heading": np.array([d_heading, 0, 0])
+            "cam_pointer": np.array([0, self.camera_pitch, 0]), #self.set_pointer(),
+            "heading": np.array([v_heading, 0, 0])
         }
 
-    def update_physics(self, a, d_heading):
-        """Met à jour position, vitesse et orientation"""
-        self.v += a * self.dt
-        self.p += self.v * self.dt
-        self.heading += d_heading
-        self.heading = (self.heading + pi) % (2 * pi) - pi  # Normalisation
-        self.t += self.dt
-
-    def main(self, pos, v, ori, img: np.ndarray | None = None):
+    def main(self, pos, v, ori, t, img: np.ndarray | None = None):
         """Boucle principale de contrôle du drone"""
         self.v = np.array(v)
         self.p = np.array(pos)
         self.heading = ori[0]
+        self.t = t
 
         command = {"a": np.zeros(3), "cam_pointer": self.pointer, "heading": np.zeros(3)}
 
         # === MODE WAIT : Patrouille et recherche ===
-        if self.mode == "WAIT":
+        if self.mode == "WAIT" and t<=15:
             if img is not None:
                 self.coord = self.img_analyse(img)
                 if self.coord is not None:
@@ -231,7 +218,7 @@ class Drone:
                 command = self.move_circle()
 
         # === MODE SURVEY : Suivi et approche de la cible ===
-        elif self.mode == "SURVEY":
+        elif self.mode == "SURVEY" or t>= 14:
             # Mise à jour de la détection
             if img is not None:
                 new_coord = self.img_analyse(img)
@@ -261,31 +248,4 @@ class Drone:
                            "cam_pointer": self.set_pointer(),
                            "heading": np.zeros(3)}
 
-        # Mise à jour physique
-        self.update_physics(command["a"], command["heading"][0])
-
         return command
-
-"""
-# === EXEMPLE D'UTILISATION ===
-if __name__ == "__main__":
-    drone = Drone(position=[0, 0, 30])  # Altitude 30m
-
-    print("🚁 Simulation de drone de surveillance")
-    print(f"Position initiale: {drone.p}")
-
-    # Simulation de 1000 frames
-    for i in range(1000):
-        # Simulation d'image (remplacer par vraie caméra)
-        img = np.random.rand(256, 256, 3) if i % 10 == 0 else None
-
-        cmd = drone.main(img)
-
-        # Affichage périodique
-        if i % 60 == 0:
-            print(f"\n[t={drone.t:.1f}s] Mode: {drone.mode}")
-            print(f"  Position: [{drone.p[0]:.1f}, {drone.p[1]:.1f}, {drone.p[2]:.1f}]")
-            print(f"  Vitesse: {np.linalg.norm(drone.v):.2f} m/s")
-            print(f"  Heading: {drone.heading * 180 / pi:.1f}°")
-            print(f"  Camera: pitch={drone.camera_pitch * 180 / pi:.1f}°, yaw={drone.camera_yaw * 180 / pi:.1f}°")
-"""

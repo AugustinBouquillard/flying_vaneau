@@ -4,18 +4,19 @@ from ultralytics import YOLO
 import numpy
 import PIL
 
-def detect_objects(model,img:PIL.Image,DEBUG=False):
+
+def detect_objects(model, img: PIL.Image, DEBUG=False):
     # Load model
-    #model = YOLO("./best.pt")
+    # model = YOLO("./best.pt")
 
     # Run inference
     results = model(img)
-    
+
     open_cv_image = cv2.cvtColor(numpy.array(img), cv2.COLOR_RGB2BGR)
     # Convert RGB to BGR
-    
+
     # Copy original image for drawing
-    #img = results[0].orig_img.copy()
+    # img = results[0].orig_img.copy()
 
     detections = []
 
@@ -34,9 +35,9 @@ def detect_objects(model,img:PIL.Image,DEBUG=False):
             "Center": (X, Y)
         })
         if DEBUG:
-        # Draw center point
+            # Draw center point
             Circle = cv2.circle(open_cv_image, (int(X), int(Y)), 5, (0, 255, 0), -1)
-            
+
             # Label center coordinates (needs int()!)
             text = f"({int(X)}, {int(Y)} : {conf:.2f})"
             cv2.putText(
@@ -44,13 +45,12 @@ def detect_objects(model,img:PIL.Image,DEBUG=False):
                 (int(X) - 20, int(Y) - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5, (0, 255, 0), 1, cv2.LINE_AA
-                )
-
+            )
 
     # Convert BGR (OpenCV) → RGB (Matplotlib)
     if DEBUG:
         img_rgb = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2RGB)
-        cv2.imshow("Res",img_rgb)
+        cv2.imshow("Res", img_rgb)
     # Show result
     """plt.figure(figsize=(10, 10))
     plt.imshow(img_rgb)
@@ -60,5 +60,5 @@ def detect_objects(model,img:PIL.Image,DEBUG=False):
     return detections
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     print(detect_objects())

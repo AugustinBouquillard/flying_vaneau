@@ -1,12 +1,11 @@
 from math import *
-campos=(0,-10,0)
-camOr=(0,0) ## phi, theta
+campos=(-59.65196283868856, -75.62041174624332, 145)
+camOr=(-24, -53) ## phi, theta
 vitTranslation=1
 vitAngulaire=1
 
 def actuCam(keys):
 	global camOr, campos
-
 	phi, theta=camOr
 	ausol=(-sin(phi*pi/180), cos(phi*pi/180),0)
 	perp=(ausol[1],-ausol[0],0)
