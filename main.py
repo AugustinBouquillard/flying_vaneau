@@ -3,7 +3,7 @@ from direct.showbase.ShowBase import ShowBase
 from PIL import Image
 from direct.task import Task
 from panda3d.core import *
-
+from first_finetuned_YOLO_detect import detect_objects
 from tank import actuTank
 
 
@@ -104,8 +104,8 @@ class MyApp(ShowBase):
         if task.time - self.last_capture_time >= self.capture_interval:
             self.last_capture_time = task.time
 
-            tex = Texture()
-            base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
+            #tex = Texture()
+            #base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
             tex = self.drone_cam.node().getDisplayRegion(0).getScreenshot()
 
             filename = f"drone_capture_{int(task.time * 10)}.png"
@@ -114,15 +114,16 @@ class MyApp(ShowBase):
             sy = tex.getYSize()
             data = tex.getRamImage().getData()
             #Convert Image to Pygame Image
-            im = Image.frombytes("RGBA", (sx, sy), data)
+            im = Image.frombytes("RGBA", (sx, sy), data,"raw","RGBA",0,-1)
             
             print(im)
+
             print("Captured:", filename)
 
             # --- RUN YOLO ON THE FRAME ---
-            results = model(im)
-            
-            print(results)
+            #results = model(im)
+            detect_objects(model,im,DEBUG=True)
+            #print(results)
 
         return Task.cont
 
