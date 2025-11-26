@@ -4,7 +4,7 @@ from ultralytics import YOLO
 
 def detect_objects(image_path="WhatsApp_Image_2025-11-25_at_20.51.47.jpeg"):
     # Load model
-    model = YOLO("runs_finetune_1/yolov8n_finetune2/weights/best.pt")
+    model = YOLO("./best.pt")
 
     # Run inference
     results = model(image_path)
@@ -30,8 +30,8 @@ def detect_objects(image_path="WhatsApp_Image_2025-11-25_at_20.51.47.jpeg"):
         })
 
         # Draw center point
-        cv2.circle(img, (int(X), int(Y)), 5, (0, 255, 0), -1)
-
+        Circle = cv2.circle(img, (int(X), int(Y)), 5, (0, 255, 0), -1)
+        
         # Label center coordinates (needs int()!)
         text = f"({int(X)}, {int(Y)})"
         cv2.putText(

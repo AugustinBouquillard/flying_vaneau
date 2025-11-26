@@ -11,7 +11,7 @@ from drone import actuDrone
 from ultralytics import YOLO
 
 #model = YOLO("best.pt")
-model = YOLO("yolov8n.pt")
+model = YOLO("./best.pt")
 
 class MyApp(ShowBase):
 
