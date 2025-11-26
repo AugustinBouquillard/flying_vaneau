@@ -1,15 +1,17 @@
 from handleCam import actuCam
 from direct.showbase.ShowBase import ShowBase
-
+from PIL import Image
 from direct.task import Task
 from panda3d.core import *
+
 from tank import actuTank
 
 
 from drone import actuDrone
 from ultralytics import YOLO
 
-model = YOLO("best.pt")
+#model = YOLO("best.pt")
+model = YOLO("yolov8n.pt")
 
 class MyApp(ShowBase):
 
@@ -23,18 +25,18 @@ class MyApp(ShowBase):
         # Apply scale and position transforms on the model.
         self.scene.setScale(0.25, 0.25, 0.25)
         self.scene.setPos(-8, 42, 0)
-        baseDir="C://Users/Baudoin/PycharmProjects/drone_hackathon"
+        #baseDir="C://Users/Baudoin/PycharmProjects/drone_hackathon"
         # Add the spinCameraTask procedure to the task manager.
         self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
         
         self.keyMap={}
         for i in list("azeqsd")+["arrow_up", "arrow_down", "arrow_left","arrow_right"]:
-        	self.keyMap[i]=False
-        	self.accept(i, self.keyEvent, [i, True]) # onkeydown
-        	self.accept(i+"-up", self.keyEvent, [i, False])
+            self.keyMap[i]=False
+            self.accept(i, self.keyEvent, [i, True]) # onkeydown
+            self.accept(i+"-up", self.keyEvent, [i, False])
         	
         #setup drone
-        tank_path0=Filename.fromOsSpecific(baseDir+"/T80_bas.dae")
+        tank_path0=Filename.fromOsSpecific("./T80_bas.dae")
         self.tank=self.loader.loadModel(tank_path0)
         self.tank.setScale(100, 100, 100)
         self.tank.reparentTo(self.render)
@@ -42,7 +44,7 @@ class MyApp(ShowBase):
         self.tank.setHpr(0,0,0)
         self.tank.setColor(0.45,0.55,0.3,1)
         s=self
-        tank_path1=Filename.fromOsSpecific(baseDir+"/T80_Haut.dae")
+        tank_path1=Filename.fromOsSpecific("./T80_Haut.dae")
         s.inutank=NodePath("jointure")
         s.inutank.reparentTo(s.tank)
         s.inutank.setPos(0,0,0)
@@ -67,7 +69,7 @@ class MyApp(ShowBase):
         #s.render.setShaderAuto()
         #dlnp.node().setShadowCaster(True, 512, 512)
 
-        drone_path=Filename.fromOsSpecific(baseDir+"/droneModel.dae")
+        drone_path=Filename.fromOsSpecific("./droneModel.dae")
         self.drone=self.loader.loadModel(drone_path)
         self.drone.setScale(10000, 10000, 10000)
         self.drone.reparentTo(self.render)
@@ -104,15 +106,22 @@ class MyApp(ShowBase):
 
             tex = Texture()
             base.win.addRenderTexture(tex, GraphicsOutput.RTMCopyRam)
-            self.drone_cam.node().getDisplayRegion(0).capture_tex(tex)
+            tex = self.drone_cam.node().getDisplayRegion(0).getScreenshot()
 
             filename = f"drone_capture_{int(task.time * 10)}.png"
-            tex.write(filename)
-
+            #tex.write(filename)
+            sx = tex.getXSize()
+            sy = tex.getYSize()
+            data = tex.getRamImage().getData()
+            #Convert Image to Pygame Image
+            im = Image.frombytes("RGBA", (sx, sy), data)
+            
+            print(im)
             print("Captured:", filename)
 
             # --- RUN YOLO ON THE FRAME ---
-            results = model(filename)
+            results = model(im)
+            
             print(results)
 
         return Task.cont
