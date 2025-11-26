@@ -22,7 +22,7 @@ class MyApp(ShowBase):
         self.scene.setScale(0.25, 0.25, 0.25)
         self.scene.setPos(-8, 42, 0)
 
-        baseDir = "C://Users/Baudoin/PycharmProjects/drone_hackathon"
+        #baseDir = "C://Users/Baudoin/PycharmProjects/drone_hackathon"
 
         # Add tasks
         self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
@@ -35,7 +35,7 @@ class MyApp(ShowBase):
             self.accept(i + "-up", self.keyEvent, [i, False])
 
         # Setup tank
-        tank_path0 = Filename.fromOsSpecific(baseDir + "/T80_bas.dae")
+        tank_path0 = Filename.fromOsSpecific("./T80_bas.dae")
         self.tank = self.loader.loadModel(tank_path0)
         self.tank.setScale(100, 100, 100)
         self.tank.reparentTo(self.render)
@@ -43,7 +43,7 @@ class MyApp(ShowBase):
         self.tank.setHpr(0, 0, 0)
         self.tank.setColor(0.45, 0.55, 0.3, 1)
 
-        tank_path1 = Filename.fromOsSpecific(baseDir + "/T80_Haut.dae")
+        tank_path1 = Filename.fromOsSpecific("./T80_Haut.dae")
         self.inutank = NodePath("jointure")
         self.inutank.reparentTo(self.tank)
         self.inutank.setPos(0, 0, 0)
